@@ -63,7 +63,7 @@
         _node_names: >-
           {{ [_host_pool.HOST] | flatten | map(attribute='NAME') | list }}
         _this: >-
-          {{ ansible_host | d(inventory_hostname) }}
+          {{ one_raft_address | default(ansible_host | default(inventory_hostname, true), true) }}
         _hv: >-
           {{ node_hv | lower }}
       register: shell
