@@ -168,8 +168,8 @@
 - name: Create /etc/ceph/ceph.conf
   ansible.builtin.copy:
     dest: /etc/ceph/ceph.conf
-    owner: 9869
-    group: 9869
+    owner: oneadmin
+    group: oneadmin
     mode: u=rw,g=r,o=
     content: |
       [client.{{ ceph.user }}]
@@ -177,16 +177,21 @@
       admin socket = /var/run/ceph/$cluster-$type.$id.$pid.$cctid.asok
       [global]
       rbd_default_format = 2
-      mon host = {{ _mon }}
+      mon host = {{ _mons }}
   vars:
     _hosts: >-
-      {{ groups.get(mon_group | d('mon')) | map('extract', hostvars, ['ansible_host']) | list }}
-    _mon: >-
+      {%- set output = [] -%}
+      {%- for host in groups.get(mon_group_name | d('mon'), []) -%}
+        {{- output.append(hostvars[host].ceph_mon_address | default(hostvars[host].ansible_host, true)) -}}
+      {%- endfor -%}
+      {{- output -}}
+    _mons: >-
       {%- set output = [] -%}
       {%- for host in _hosts -%}
         {{- output.append('[v2:%(host)s:3300,v1:%(host)s:6789]' | format(host=host)) -}}
       {%- endfor -%}
-      {{- output | join(',') -}}
+      {{- output | join(_sep) -}}
+    _sep: ','
 
 - name: Create Libvirt secret XML
   ansible.builtin.copy:
