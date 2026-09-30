@@ -3,8 +3,7 @@
     _selinux_os:
       Debian: false
       RedHat: true
-      openSUSE Leap: true
-      SLES: false
+      Suse: true
     _has_selinux: >-
       {{ _selinux_os[ansible_distribution] | d(_selinux_os[ansible_os_family]) }}
   block:
@@ -32,6 +31,15 @@
         _has_openvswitch_user: >-
           {{ ansible_facts.getent_passwd.openvswitch is not none }}
       block:
+        - name: Install SELinux policy tools (checkmodule, semodule, semanage)
+          ansible.builtin.package:
+            name: "{{ ovs_packages_selinux[ansible_distribution] | d(ovs_packages_selinux[ansible_os_family]) }}"
+          register: package
+          until: package is success
+          retries: 12
+          delay: 5
+          when: _has_selinux
+
         - name: Create custom SELinux policy for DPDK / Libvirt shared sockets
           ansible.builtin.shell:
             cmd: |
@@ -53,15 +61,20 @@
                 exit 78 # EREMCHG
               fi
             stdin: |
-              module dpdk_virt 1.0;
+              module dpdk_virt 1.1;
               require {
                   type openvswitch_t;
                   type virt_var_run_t;
+                  type svirt_t;
+                  type svirt_tmpfs_t;
                   class dir { search getattr read open };
-                  class sock_file { write getattr append };
+                  class sock_file { write getattr append unlink };
+                  class file { map getattr };
               }
               allow openvswitch_t virt_var_run_t:dir { search getattr read open };
               allow openvswitch_t virt_var_run_t:sock_file { write getattr append };
+              allow svirt_t virt_var_run_t:sock_file unlink;
+              allow openvswitch_t svirt_tmpfs_t:file { map getattr };
             executable: /bin/bash
           register: shell_dpdk_virt
           changed_when:

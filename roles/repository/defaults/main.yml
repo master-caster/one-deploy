@@ -1,5 +1,6 @@
 ---
 one_version: '7.2'
+one_edition: "{{ 'Enterprise' if (one_token is defined and one_token is truthy) else 'Community' }}"
 
 repo_constraints:
   ceph:
@@ -122,6 +123,7 @@ opennebula_repo_key_path: {}
 opennebula_repo_key_url: {}
 opennebula_repo_path: {}
 opennebula_repo_url: {}
+opennebula_repo_auth_path: {}
 
 opennebula_repo_key_path_defaults:
   Debian: /etc/apt/trusted.gpg.d/opennebula2.asc
@@ -141,36 +143,41 @@ opennebula_repo_path_defaults:
 opennebula_repo_url_defaults:
   # DEB
   Debian: >-
-    {%- if one_token is defined and one_token is truthy -%}
-      https://{{ one_token }}@enterprise.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}/{{ ansible_distribution_major_version }}
+    {%- if one_edition in ['Enterprise'] -%}
+      https://enterprise.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}/{{ ansible_distribution_major_version }}
     {%- else -%}
       https://downloads.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}/{{ ansible_distribution_major_version }}
     {%- endif -%}
   Ubuntu: >-
-    {%- if one_token is defined and one_token is truthy -%}
-      https://{{ one_token }}@enterprise.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}/{{ ansible_distribution_version }}
+    {%- if one_edition in ['Enterprise'] -%}
+      https://enterprise.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}/{{ ansible_distribution_version }}
     {%- else -%}
       https://downloads.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}/{{ ansible_distribution_version }}
     {%- endif -%}
   # RPM
   openSUSE Leap: >-
-    {%- if one_token is defined and one_token is truthy -%}
-      https://{{ one_token }}@enterprise.opennebula.io/repo/{{ one_version }}/openSUSE
+    {%- if one_edition in ['Enterprise'] -%}
+      https://enterprise.opennebula.io/repo/{{ one_version }}/openSUSE
     {%- else -%}
       https://downloads.opennebula.io/repo/{{ one_version }}/openSUSE
     {%- endif -%}
   RedHat: >-
-    {%- if one_token is defined and one_token is truthy -%}
-      https://{{ one_token }}@enterprise.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}
+    {%- if one_edition in ['Enterprise'] -%}
+      https://enterprise.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}
     {%- else -%}
       https://downloads.opennebula.io/repo/{{ one_version }}/{{ ansible_distribution }}
     {%- endif -%}
   Suse: >-
-    {%- if one_token is defined and one_token is truthy -%}
-      https://{{ one_token }}@enterprise.opennebula.io/repo/{{ one_version }}/SLES
+    {%- if one_edition in ['Enterprise'] -%}
+      https://enterprise.opennebula.io/repo/{{ one_version }}/SLES
     {%- else -%}
       https://downloads.opennebula.io/repo/{{ one_version }}/SLES
     {%- endif -%}
+
+opennebula_repo_auth_path_defaults:
+  Debian: /etc/apt/auth.conf.d/opennebula.conf
+  RedHat: null # handled in .repo files
+  Suse: /etc/zypp/credentials.d/opennebula.conf
 
 opennebula_repo_pre_enable_defaults:
   AlmaLinux:
@@ -194,7 +201,7 @@ opennebula_repo_pre_enable_defaults:
     extra_repos:
       '16':
         - alias: science
-          uri: https://download.opensuse.org/repositories/science/openSUSE_Leap_16.0/
+          uri: https://download.opensuse.org/repositories/science/{{ ansible_distribution_version }}/
         - alias: multimedia
           uri: https://download.opensuse.org/repositories/multimedia:/apps/16.0/
         - alias: devel_languages_go
@@ -221,12 +228,14 @@ opennebula_repo_pre_enable_defaults:
       '9': [https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm]
       '10': [https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm]
   SLES:
+    # NOTE: Only the SUSE Package Hub extension is required (python313-scipy, nodejs).
+    #       The python313-pyone bindings additionally require python313-grpcio, which is
+    #       only available in the SUSE HA Extension (sle-ha/16.0/<arch>, extra regcode).
+    #       It is optional, register it manually (with the regcode) if needed.
     suse_connect:
-      '15':
-        - sle-module-desktop-applications/15.{{ ansible_distribution_release }}/{{ ansible_architecture }}
-        - sle-module-public-cloud/15.{{ ansible_distribution_release }}/{{ ansible_architecture }}
-        - PackageHub/15.{{ ansible_distribution_release }}/{{ ansible_architecture }}
+      '16':
+        - PackageHub/{{ ansible_distribution_version }}/{{ ansible_architecture }}
     extra_repos:
-      '15': []
+      '16': []
     extra_rpms:
-      '15': []
+      '16': []

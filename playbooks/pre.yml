@@ -4,7 +4,7 @@
   collections:
     - opennebula.deploy
   roles:
-    - role: bastion
+    - role: helper/bastion
       delegate_to: localhost
       become: false
       tags: [bastion]
@@ -62,6 +62,9 @@
   collections:
     - opennebula.deploy
   roles:
+    - role: helper/kernel
+      tags: [kernel]
+
     - role: helper/keys
       tags: [keys]
 
@@ -70,15 +73,6 @@
 
     - role: helper/logs
       tags: [logs]
-
-    - role: helper/mkfs
-      tags: [mkfs]
-
-    - role: helper/fstab
-      tags: [fstab]
-
-    - role: helper/kernel
-      tags: [kernel]
 
     - role: precheck/post_reboot
 
@@ -105,3 +99,15 @@
 
     - role: openvswitch
       tags: [openvswitch]
+
+    - role: helper/nbd
+      tags: [nbd]
+
+    - role: helper/iscsi
+      tags: [iscsi]
+
+    - role: helper/mkfs
+      tags: [mkfs]
+
+    - role: helper/fstab
+      tags: [fstab]

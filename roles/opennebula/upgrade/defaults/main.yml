@@ -1,0 +1,29 @@
+---
+opennebula_upgrade_os_packages:
+  frontend:
+    - "{{ 'opennebula-fireedge' if features.gui | bool else none }}"
+    - "{{ 'opennebula-flow' if features.flow | bool else none }}"
+    - "{{ 'opennebula-form' if features.form | bool else none }}"
+    - "{{ 'opennebula-gate' if features.gate | bool else none }}"
+    - "{{ 'opennebula-guacd' if features.gui | bool else none }}"
+    - opennebula-migration
+    - opennebula
+    # NOTE: On SLES 16 python313-pyone requires python313-grpcio from the SUSE HA Extension
+    #       (extra regcode), so the bindings are not upgraded there unless overridden.
+    - >-
+      {{ ((ansible_python_interpreter | d('/usr/bin/python3') | basename | replace('.', '')) ~ '-pyone')
+         if ansible_os_family != 'Suse' else
+         none }}
+  node:
+    - opennebula-node-kvm
+
+opennebula_upgrade_systemd_units:
+  frontend:
+    - "{{ 'opennebula-fireedge.service' if features.gui | bool else none }}"
+    - "{{ 'opennebula-flow.service' if features.flow | bool else none }}"
+    - "{{ 'opennebula-form.service' if features.form | bool else none }}"
+    - "{{ 'opennebula-gate.service' if features.gate | bool else none }}"
+    - "{{ 'opennebula-guacd.service' if features.gui | bool else none }}"
+    - opennebula-hem.service
+    - opennebula.service
+  node: []
